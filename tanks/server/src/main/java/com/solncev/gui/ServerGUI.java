@@ -1,6 +1,7 @@
+package com.solncev.gui;
 
 
-import server.model.Server;
+import com.solncev.model.Server;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
