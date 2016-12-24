@@ -1,6 +1,5 @@
 package com.solncev.controllers;
 
-
 import com.solncev.helpers.Protocol;
 import com.solncev.models.Client;
 import com.solncev.models.Tank;
@@ -81,5 +80,4 @@ public class Controller implements KeyListener {
 
     public void keyReleased(KeyEvent e) {
     }
-
 }

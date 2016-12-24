@@ -234,5 +234,4 @@ public class ClientGUI extends JFrame implements ActionListener, WindowListener 
             }
         }
     }
-
 }
