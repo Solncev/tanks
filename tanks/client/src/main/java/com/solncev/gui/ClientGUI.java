@@ -1,6 +1,8 @@
-﻿import client.helpers.Protocol;
-import client.models.Client;
-import client.models.Tank;
+package com.solncev.gui;
+
+import com.solncev.helpers.Protocol;
+import com.solncev.models.Client;
+import com.solncev.models.Tank;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,5 +1,7 @@
-import client.controllers.Controller;
-import client.models.Tank;
+package com.solncev.gui;
+
+import com.solncev.controllers.Controller;
+import com.solncev.models.Tank;
 
 import javax.swing.*;
 import java.awt.*;
@@ -39,7 +41,7 @@ public class GameBoardPanel extends JPanel {
 
         g.setColor(Color.GREEN);
         g.fillRect(70, 50, getWidth() - 100, getHeight());
-        g.drawImage(new ImageIcon("C:\\qwer\\src\\client\\images/bg.jpg").getImage(), 70, 50, null);
+        g.drawImage(new ImageIcon("C:\\tanks\\tanks\\client\\src\\main\\java\\com\\solncev\\images/bg.jpg").getImage(), 70, 50, null);
         g.setColor(Color.YELLOW);
         g.setFont(new Font("Helvetica", Font.BOLD, 25));
         g.drawString("Tanks", 255, 30);
