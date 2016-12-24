@@ -1,5 +1,3 @@
-
-
 import server.model.Server;
 
 import javax.swing.*;

@@ -1,6 +1,4 @@
-﻿
-
-import client.helpers.Protocol;
+﻿import client.helpers.Protocol;
 import client.models.Client;
 import client.models.Tank;
 
@@ -27,6 +25,8 @@ public class ClientGUI extends JFrame implements ActionListener, WindowListener 
     private JTextField portText;
     private JButton registerButton;
     private JPanel registerPanel;
+    private Client client;
+    private Tank clientTank;
     private GameBoardPanel boardPanel;
 
     public ClientGUI() {
@@ -80,6 +80,10 @@ public class ClientGUI extends JFrame implements ActionListener, WindowListener 
 
         gameStatusPanel.add(scoreLabel);
 
+        client = Client.getGameClient();
+
+        clientTank = new Tank();
+        boardPanel = new GameBoardPanel(clientTank, false);
 
         getContentPane().add(registerPanel);
         getContentPane().add(gameStatusPanel);
@@ -98,8 +102,24 @@ public class ClientGUI extends JFrame implements ActionListener, WindowListener 
 
         if (obj == registerButton) {
             registerButton.setEnabled(false);
-            //
-        
+
+            try {
+                client.register(ipaddressText.getText(), Integer.parseInt(portText.getText()), clientTank.getXposition(), clientTank.getYposition());
+                boardPanel.setGameStatus(true);
+                boardPanel.repaint();
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                new ClientReceivingThread(client.getSocket()).start();
+                registerButton.setFocusable(false);
+                boardPanel.setFocusable(true);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "The Server is not running, try again later!", "Tanks", JOptionPane.INFORMATION_MESSAGE);
+                System.out.println("The Server is not running!");
+                registerButton.setEnabled(true);
+            }
         }
     }
 
@@ -107,7 +127,7 @@ public class ClientGUI extends JFrame implements ActionListener, WindowListener 
     }
 
     public void windowClosing(WindowEvent e) {
-        
+        Client.getGameClient().sendToServer(new Protocol().ExitMessagePacket(clientTank.getTankID()));
     }
 
     public void windowClosed(WindowEvent e) {
@@ -123,6 +143,94 @@ public class ClientGUI extends JFrame implements ActionListener, WindowListener 
     }
 
     public void windowDeactivated(WindowEvent e) {
+    }
+
+    public class ClientReceivingThread extends Thread {
+        Socket clientSocket;
+        DataInputStream reader;
+
+        public ClientReceivingThread(Socket clientSocket) {
+            this.clientSocket = clientSocket;
+            try {
+                reader = new DataInputStream(clientSocket.getInputStream());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+
+        public void run() {
+            while (isRunning) {
+                String sentence = "";
+                try {
+                    sentence = reader.readUTF();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+                if (sentence.startsWith("ID")) {
+                    int id = Integer.parseInt(sentence.substring(2));
+                    clientTank.setTankID(id);
+                } else if (sentence.startsWith("NewClient")) {
+                    int pos1 = sentence.indexOf(',');
+                    int pos2 = sentence.indexOf('-');
+                    int pos3 = sentence.indexOf('|');
+                    int x = Integer.parseInt(sentence.substring(9, pos1));
+                    int y = Integer.parseInt(sentence.substring(pos1 + 1, pos2));
+                    int dir = Integer.parseInt(sentence.substring(pos2 + 1, pos3));
+                    int id = Integer.parseInt(sentence.substring(pos3 + 1, sentence.length()));
+                    if (id != clientTank.getTankID())
+                        boardPanel.registerNewTank(new Tank(x, y, dir, id));
+                } else if (sentence.startsWith("Update")) {
+                    int pos1 = sentence.indexOf(',');
+                    int pos2 = sentence.indexOf('-');
+                    int pos3 = sentence.indexOf('|');
+                    int x = Integer.parseInt(sentence.substring(6, pos1));
+                    int y = Integer.parseInt(sentence.substring(pos1 + 1, pos2));
+                    int dir = Integer.parseInt(sentence.substring(pos2 + 1, pos3));
+                    int id = Integer.parseInt(sentence.substring(pos3 + 1, sentence.length()));
+
+                    if (id != clientTank.getTankID()) {
+                        boardPanel.getTank(id).setXpoistion(x);
+                        boardPanel.getTank(id).setYposition(y);
+                        boardPanel.getTank(id).setDirection(dir);
+                        boardPanel.repaint();
+                    }
+
+                } else if (sentence.startsWith("Shot")) {
+                    int id = Integer.parseInt(sentence.substring(4));
+
+                    if (id != clientTank.getTankID()) {
+                        boardPanel.getTank(id).shot();
+                    }
+
+                } else if (sentence.startsWith("Remove")) {
+                    int id = Integer.parseInt(sentence.substring(6));
+
+                    if (id == clientTank.getTankID()) {
+                        int response = JOptionPane.showConfirmDialog(null, "Sorry, You are loss. Do you want to try again ?", "Tanks 2D Multiplayer Game", JOptionPane.OK_CANCEL_OPTION);
+                        if (response == JOptionPane.OK_OPTION) {
+                            setVisible(false);
+                            dispose();
+                            new ClientGUI();
+                        } else {
+                            System.exit(0);
+                        }
+                    } else {
+                        boardPanel.removeTank(id);
+                    }
+                } else if (sentence.startsWith("Exit")) {
+                    int id = Integer.parseInt(sentence.substring(4));
+                    if (id != clientTank.getTankID()) {
+                        boardPanel.removeTank(id);
+                    }
+                }
+            }
+            try {
+                reader.close();
+                clientSocket.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
 }
